@@ -1,5 +1,5 @@
 #include <iostream>
-#include<fstream>
+#include <fstream>
 using namespace std;
 void read()
 {
@@ -7,11 +7,12 @@ void read()
     string line;
     // Open an existing file
     fin.open("diabetes.csv");
-     while(!fin.eof()){
-                fin>>line;
-            cout<<line<<" "<<endl;
-            }
+    while (!fin.eof())
+    {
+        fin >> line;
+        cout << line << " " << endl;
     }
+}
 int main()
 {
     read();

@@ -1,1 +1,3 @@
-g++ main.cpp
+```sh
+$ g++ main.cpp
+```

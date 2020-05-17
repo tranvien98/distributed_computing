@@ -111,7 +111,7 @@ int main()
     {
         int index = rand() % copy.size();
         train_set.push_back(copy.at(index));
-        copy.erase(find(copy.begin(), copy.end(), 2));
+        copy.erase(find(copy.begin(), copy.end(), copy.at(index)));
     }
     //
     map<float, vector<tuple<float>>> summaries = summarize_by_class(train_set);

@@ -3,6 +3,7 @@
 #include <sstream>
 #include <vector>
 
+
 using namespace std;
 // for string delimiter
 vector<string> split (const string &s, char delim) {
@@ -31,11 +32,11 @@ vector<double> readByColumn(int pos) {
        //atof(num.c_str())
     }
     return result;
-    }
+}
 int main()
 {
     // dọc cot nao thi truyen vao so thu tu cot do, tinh tu 1
-    vector<double> cot1 = readByColumn(7);
-    for (auto i : cot1) cout << i << endl;
+    vector<double> cot7 = readByColumn(7);
+    for (auto i : cot7) cout << i << endl;
     return 0;
 }

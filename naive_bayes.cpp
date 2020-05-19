@@ -18,12 +18,13 @@ decltype(auto) sum_tupple(Tuple const &tuple)
 };
 
 // tinh toan gia tri trung binh cua moi thuoc tinh
-float mean(tuple<float> numbers)
+double mean(tuple<double> numbers)
 {
-    return sum_tupple(numbers) / float(tuple_size<decltype(numbers)>::value);
+    // BUG: xem lai ham sum_tupple, luc trc la tinh tuple<double>
+    return sum_tupple(numbers) / double(tuple_size<decltype(numbers)>::value);
 }
 
-float sum_vector(vector<float> &v)
+double sum_vector(vector<double> &v)
 {
     int initial_sum = 0;
     return accumulate(v.begin(), v.end(), initial_sum);
@@ -31,90 +32,123 @@ float sum_vector(vector<float> &v)
 
 // Tinh toan do lech chuan cho tung thuoc tinh
 template <class Tuple>
-float standard_deviation(tuple<float> numbers)
+double standard_deviation(tuple<double> numbers)
 {
-    float avg = mean(numbers);
-    vector<float> a;
-
+    double avg = mean(numbers);
+    vector<double> a;
     apply([](auto &&... args) { ((a.push_back(pow(args - avg, 2));), ...); }, numbers);
-    float variance = sum_vector(a) / float(tuple_size<decltype(numbers)>::value - 1);
+    double variance = sum_vector(a) / double(tuple_size<decltype(numbers)>::value - 1);
     return sqrt(variance);
 }
 
 // Gia tri trung binh , do lech chuan
-vector<tuple<float>> summarize(vector<vector<float>> dataset)
+vector<tuple<double, double>> summarize(vector<vector<double>> dataset)
 {
     // BUG: convert sang c++
-    vector<float> summaries = [(mean(attribute), standard_deviation(attribute)) for attribute in zip(*dataset)];
+    vector<double, double> summaries = [(mean(attribute), standard_deviation(attribute)) for attribute in zip(*dataset)];
 
     summaries.pop_back();
     return summaries;
 }
 
 // Phan chia tap du lieu theo class
-map<float, vector<vector<float>>> separate_data(vector<vector<float>> dataset)
+map<double, vector<vector<double>>> separate_data(vector<vector<double>> dataset)
 {
-    map<float, vector<vector<float>>> separated;
+    map<double, vector<vector<double>>> separated;
     for (int i = 0; i < dataset.size(); i++)
     {
-        vector<float> vec = dataset[i];
+        vector<double> vec = dataset[i];
         if (count(separated.begin(), separated.end(), vec.back()))
         {
         }
         else
-            separated[vec.back()] = vector<vector<float>>();
+            separated[vec.back()] = vector<vector<double>>();
         separated[vec.back()].push_back(vec);
     }
     return separated;
 }
 
-map<float, vector<tuple<float>>> summarize_by_class(vector<vector<float>> dataset)
+map<double, vector<tuple<double, double>>> summarize_by_class(vector<vector<double>> dataset)
 {
-    map<float, vector<vector<float>>> separated = separate_data(dataset);
-    map<float, vector<tuple<float>>> summaries;
-    for (map<float, vector<vector<float>>>::iterator it = separated.begin(); it != separated.end(); ++it)
+    map<double, vector<vector<double>>> separated = separate_data(dataset);
+    map<double, vector<tuple<double, double>>> summaries;
+    for (map<double, vector<vector<double>>>::iterator it = separated.begin(); it != separated.end(); ++it)
         summaries[it->first] = summarize(it->second);
 
     return summaries;
 }
 
-// Du doan vector thuoc phan lop nao
-float predict(map<float, vector<tuple<float>>> summaries, vector<float> input_vector)
+double calculate_prob(double x, double mean, double x)
 {
-    // TO DO
+    // BUG: convert to C++
+    float exponent = math.exp(-(math.pow(x - mean, 2) / (2 * math.pow(stdev, 2))));
+    return (1 / (math.sqrt(2 * math.pi) * stdev)) * exponent;
+}
+
+// Tinh xac suat cho moi thuoc tinh phan chia theo class
+map<double, double> calculate_class_prob(map<double, vector<tuple<double, double>>> summaries, vector<double> input_vector)
+{
+    map<double, double> probabilities;
+    for (map<double, vector<tuple<double, double>>>::iterator it = summaries.begin(); it != summaries.end(); ++it)
+    {
+        probabilities[it->first] = 1;
+        for(int i=0; i<(it->second).size(); ++i)
+        {
+            double mean = get<0>(summaries);
+            double stdev = get<1>(summaries);
+            double x = input_vector[i];
+            probabilities.at(it->first) *= calculate_prob(x, mean, stdev);
+        }
+    }
+    return probabilities
+}
+
+// Du doan vector thuoc phan lop nao
+double predict(map<double, vector<tuple<double, double>>> summaries, vector<double> input_vector)
+{
+    map<double, double> probabilities = calculate_class_prob(summaries, input_vector);
+    double best_label = 9999, best_prob = -1;
+    for (map<double, double>::iterator it = probabilities.begin(); it != probabilities.end(); ++it)
+        if (best_label == 9999 || it->second > best_prob)
+        {
+            best_prob = it->second; //probability
+            best_label = it->first; // class value
+        }
+    return best_label;
 }
 
 // Du doan tap du lieu testing thuoc vao phan lop nao
-vector<float> get_predictions(map<float, vector<tuple<float>>> summaries, vector<vector<float>> test_set)
+vector<double> get_predictions(map<double, vector<tuple<double, double>>> summaries, vector<vector<double>> test_set)
 {
-    vector<float> predictions;
+    vector<double> predictions;
     for (int i = 0; i < test_set.size(); i++)
         predictions.push_back(predict(summaries, test_set[i]));
     return predictions;
 }
 
 // doc file
-vector<vector<float>> load_data(string filepath)
+vector<vector<double>> load_data(string filepath)
 {
     // TO DO
 }
 
 int main()
 {
-    float split_ratio = 0.8;
-    vector<vector<float>> dataset = load_data("diabetes.csv");
+    double split_ratio = 0.8;
+    vector<vector<double>> dataset = load_data("diabetes.csv");
     // chia train(train_set), test(copy)
-    float train_size = dataset.size() * split_ratio;
-    vector<vector<float>> train_set;
-    vector<vector<float>> copy = dataset;
+    double train_size = dataset.size() * split_ratio;
+    vector<vector<double>> train_set;
+    vector<vector<double>> test_set = dataset;
     while (train_set.size() < train_size)
     {
-        int index = rand() % copy.size();
-        train_set.push_back(copy.at(index));
-        copy.erase(find(copy.begin(), copy.end(), copy.at(index)));
+        int index = rand() % test_set.size();
+        train_set.push_back(test_set.at(index));
+        test_set.erase(test_set.begin() + index);
     }
     //
-    map<float, vector<tuple<float>>> summaries = summarize_by_class(train_set);
+    map<double, vector<tuple<double, double>>> summaries = summarize_by_class(train_set);
+    vector<double> predictions = get_predictions(summaries, test_set);
 
     return 0;
 }

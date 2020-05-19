@@ -42,7 +42,7 @@ def split_data(dataset, splitRatio):
 
 # tinh toan gia tri trung binh cua moi thuoc tinh
 def mean(numbers):
-    # print(type(numbers)) # tupple(float)
+    # number: tupple(float, float ...) ca cot thuoc tinh
     return sum(numbers) / float(len(numbers))
 
 # Tinh toan do lech chuan cho tung thuoc tinh
@@ -90,17 +90,20 @@ def summarize_by_class(dataset):
 
 def calculate_prob(x, mean, stdev):
     exponent = math.exp(-(math.pow(x - mean, 2) / (2 * math.pow(stdev, 2))))
-
-    return (1 / (math.sqrt(2 * math.pi) * stdev)) * exponent
+    print(type(exponent))
+    return (1 / (math.sqrt(2 * math.pi) * stdev)) * exponent # float
 
 # Tinh xac suat cho moi thuoc tinh phan chia theo class
 def calculate_class_prob(summaries, inputVector):
     probabilities = {}
     for classValue, classSummaries in summaries.items():
+        # print(type(classSummaries)) # list
         probabilities[classValue] = 1
         for i in range(len(classSummaries)):
             mean, stdev = classSummaries[i]
-            x = inputVector[i]
+            
+            # print(type(mean), type(stdev)) float float
+            x = inputVector[i] # float
             probabilities[classValue] *= calculate_prob(x, mean, stdev)
 
     return probabilities
@@ -108,7 +111,7 @@ def calculate_class_prob(summaries, inputVector):
 # Du doan vector thuoc phan lop nao
 
 def predict(summaries, inputVector):
-    probabilities = calculate_class_prob(summaries, inputVector)
+    probabilities = calculate_class_prob(summaries, inputVector) # dict<double, double>
     bestLabel, bestProb = None, -1
     for classValue, probability in probabilities.items():
         if bestLabel is None or probability > bestProb:
@@ -159,6 +162,7 @@ def main():
     # get_data_label(trainingSet)
     # test model
     predictions = get_predictions(summaries, testSet)
+    # print((predictions)) # list(float)
     accuracy = get_accuracy(testSet, predictions)
     print('Accuracy of my implement: {0}%'.format(accuracy))
 

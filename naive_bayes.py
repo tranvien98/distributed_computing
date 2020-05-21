@@ -22,6 +22,7 @@ def separate_data(dataset):
         if (vector[-1] not in separated):
             separated[vector[-1]] = []
         separated[vector[-1]].append(vector)
+        print("bat dauuuuuuuuuuuuuuuuuuuuu", separated[vector[-1]], "ketsttttttttttttttttttttttttt", vector[-1])
 
     # print(type(separated)) dict
     # print(type(separated[0])) list
@@ -90,7 +91,7 @@ def summarize_by_class(dataset):
 
 def calculate_prob(x, mean, stdev):
     exponent = math.exp(-(math.pow(x - mean, 2) / (2 * math.pow(stdev, 2))))
-    print(type(exponent))
+    # print(type(exponent)) float
     return (1 / (math.sqrt(2 * math.pi) * stdev)) * exponent # float
 
 # Tinh xac suat cho moi thuoc tinh phan chia theo class
@@ -132,7 +133,6 @@ def get_predictions(summaries, testSet):
     return predictions # list float
 
 # Tinh toan do chinh xac cua phan lop
-
 def get_accuracy(testSet, predictions):
     correct = 0
     for i in range(len(testSet)):
@@ -163,7 +163,7 @@ def main():
     # test model
     predictions = get_predictions(summaries, testSet)
     # print((predictions)) # list(float)
-    accuracy = get_accuracy(testSet, predictions)
+    accuracy = get_accuracy(testSet, predictions) # float
     print('Accuracy of my implement: {0}%'.format(accuracy))
 
 

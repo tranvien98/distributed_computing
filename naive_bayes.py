@@ -22,7 +22,7 @@ def separate_data(dataset):
         if (vector[-1] not in separated):
             separated[vector[-1]] = []
         separated[vector[-1]].append(vector)
-        print("bat dauuuuuuuuuuuuuuuuuuuuu", separated[vector[-1]], "ketsttttttttttttttttttttttttt", vector[-1])
+        # print("bat dauuuuuuuuuuuuuuuuuuuuu", separated[vector[-1]], "ketsttttttttttttttttttttttttt", vector[-1])
 
     # print(type(separated)) dict
     # print(type(separated[0])) list
@@ -54,6 +54,7 @@ def standard_deviation(numbers):
         b = pow(x - avg, 2)
         a.append(b)
     variance = sum(a) / float(len(numbers) - 1)
+    
     # variance = sum([pow(x - avg, 2) for x in numbers]) / float(len(numbers) - 1)
     # print(type(variance)) # float
     return math.sqrt(variance)
@@ -63,7 +64,11 @@ def summarize(dataset):
     # print(type(dataset)) list
     # print(type(dataset[0])) list
     # print(type(dataset[0][0])) float
-    summaries = [(mean(attribute), standard_deviation(attribute)) for attribute in zip(*dataset)]
+    # summaries = [(mean(attribute), standard_deviation(attribute)) for attribute in zip(*dataset)]
+
+    summaries = []
+    for attribute in zip(*dataset):
+        summaries.append((mean(attribute), standard_deviation(attribute)))
     del summaries[-1]
     # print(type(summaries)) list
     # print(type(summaries[0])) tuple
@@ -76,7 +81,6 @@ def summarize_by_class(dataset):
     # print(type(dataset[0])) list
     # print(type(dataset[0][0])) float
     separated = separate_data(dataset) # dict
-
     summaries = {}
     for classValue, instances in separated.items():
         # print(type(classValue), type(instances)) float list
@@ -84,6 +88,7 @@ def summarize_by_class(dataset):
     # for classValue, instances in summaries.items():
         # print(type(instances[0])) tuple
         # print(type(classValue), type(instances)) float, list tuple float
+
     return summaries
 
 # Tinh toan xac suat theo phan phoi Gause cua bien lien tuc
@@ -151,12 +156,12 @@ def get_data_label(dataset):
     return data, label
 
 def main():
-    filename = 'diabetes.csv'
+    filename = 'diabetes2.csv'
     splitRatio = 0.8
     dataset = load_data(filename) # list list float
     trainingSet, testSet = split_data(dataset, splitRatio) # type list
     print('Data size {0} \nTraining Size={1} \nTest Size={2}'.format(len(dataset), len(trainingSet), len(testSet)))
-
+    print(testSet)
     # prepare model
     summaries = summarize_by_class(trainingSet)
     # get_data_label(trainingSet)

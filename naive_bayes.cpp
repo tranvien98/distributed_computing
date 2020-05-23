@@ -1,52 +1,49 @@
-#include <iostream>
-#include <tuple>
-#include <vector>
-#include <numeric>
-#include <map>
-#include <math.h>    //sqrt
-#include <algorithm> // count
-#include <stdlib.h>  /* rand */
+#include <bits/stdc++.h>
 
 using namespace std;
 
-template <class Tuple>
-decltype(auto) sum_tupple(Tuple const &tuple)
+void zip(vector<vector<double>> &b)
 {
-    auto sum_them = [](auto const &... e) -> decltype(auto) {
-        return (e + ...);
-    };
-    return apply(sum_them, tuple);
-};
-
-// tinh toan gia tri trung binh cua moi thuoc tinh
-double mean(tuple<double> numbers)
-{
-    return sum_tupple(numbers) / double(tuple_size<decltype(numbers)>::value);
+    if (b.size() == 0)
+        return;
+    vector<vector<double>> trans_vec(b[0].size(), vector<double>());
+    for (int i = 0; i < b.size(); i++)
+    {
+        for (int j = 0; j < b[i].size(); j++)
+        {
+            trans_vec[j].push_back(b[i][j]);
+        }
+    }
+    b = trans_vec;
 }
 
-double sum_vector(vector<double> &v)
+// tinh toan gia tri trung binh cua moi thuoc tinh
+double mean(vector<double> numbers)
 {
-    int initial_sum = 0;
-    return accumulate(v.begin(), v.end(), initial_sum);
+    return accumulate(numbers.begin(), numbers.end(), 0) / double(numbers.size());
 }
 
 // Tinh toan do lech chuan cho tung thuoc tinh
-template <class Tuple>
-double standard_deviation(tuple<double> numbers)
+double standard_deviation(vector<double> numbers)
 {
     double avg = mean(numbers);
     vector<double> a;
-    apply([](auto &&... args) { ((a.push_back(pow(args - avg, 2));), ...); }, numbers);
-    double variance = sum_vector(a) / double(tuple_size<decltype(numbers)>::value - 1);
+    for (unsigned i = 0; i < numbers.size(); i++)
+        a.push_back(pow(numbers.at(i) - avg, 2));
+    double variance = accumulate(a.begin(), a.end(), 0) / double(numbers.size() - 1);
     return sqrt(variance);
 }
 
 // Gia tri trung binh , do lech chuan
 vector<tuple<double, double>> summarize(vector<vector<double>> dataset)
 {
-    // BUG: convert sang c++
-    vector<double, double> summaries = [(mean(attribute), standard_deviation(attribute)) for attribute in zip(*dataset)];
-
+    zip(dataset);
+    vector<tuple<double, double>> summaries;
+    for (unsigned i = 0; i < dataset.size(); i++)
+    {
+        auto tup = make_tuple(mean(dataset.at(i)), standard_deviation(dataset.at(i)));
+        summaries.push_back(tup);
+    }
     summaries.pop_back();
     return summaries;
 }
@@ -94,8 +91,8 @@ map<double, double> calculate_class_prob(map<double, vector<tuple<double, double
         probabilities[it->first] = 1;
         for (int i = 0; i < (it->second).size(); ++i)
         {
-            double mean = get<0>(summaries);
-            double stdev = get<1>(summaries);
+            double mean = get<0>((it->second).at(i));
+            double stdev = get<1>((it->second).at(i));
             double x = input_vector[i];
             probabilities.at(it->first) *= calculate_prob(x, mean, stdev);
         }
@@ -139,7 +136,9 @@ double get_accuracy(vector<vector<double>> test_set, vector<double> predictions)
 // doc file
 vector<vector<double>> load_data(string filepath)
 {
-    // TO DO
+    // Need data with format: vector<vector<double>>
+    // Example: [[0.0, 145.0, 0.0, 0.0, 0.0, 44.2, 0.63, 31.0, 1.0], [4.0, 99.0, 72.0, 17.0, 0.0, 25.6, 0.294, 28.0, 0.0], ...]
+    // [[row 1], [row 2], ...]
 }
 
 int main()

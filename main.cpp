@@ -116,10 +116,10 @@ int main()
     // thu chuan hoa vector thu 4 dau tien cua tap test
     vector<double> item = data[0][4];
     vector<double> standardizedItem = standardize(standard,item);
-    for (auto k :    standardizedItem)
-        {
-            cout << k << endl;
-        }
+    // for (auto k :    standardizedItem)
+    //     {
+    //         cout << k << endl;
+    //     }
 
     // tạp test sau khi chuan hoa
     vector<vector<double>> test;
@@ -127,15 +127,21 @@ int main()
         test.push_back(standardize(standard,item));
     }
     // in ra vector thu 4 sau khi chuan hoa
-    for(auto item : test[4])
-        cout << item << endl;
+    // for(auto item : test[4])
+    //     cout << item << endl;
     // tap train sau khi chuan hoa
     vector<vector<double>> train;
     for(auto item : data[1]) {
         train.push_back(standardize(standard,item));
     }
     //in ra vector thu 4 cua tap train sau chuan hoa
-    for(auto item : train[4])
+    vector<double> x = train[0];
+    cout << x.size() << endl;
+     for(auto item : x)
+        cout << item << endl;
+    x.pop_back();
+    cout << x.size() << endl;
+    for(auto item : x)
         cout << item << endl;
     return 0;
 }

@@ -16,18 +16,17 @@ def load_data(filename):
 # Phan chia tap du lieu theo class
 def separate_data(dataset):
     # print(type(dataset)) list list float
+    # print("dataset")
+    # print(dataset)
     separated = {}
     for i in range(len(dataset)):
         vector = dataset[i]
         if (vector[-1] not in separated):
             separated[vector[-1]] = []
         separated[vector[-1]].append(vector)
-
-    # print(type(separated)) dict
-    # print(type(separated[0])) list
-    # print(type(separated[0][0])) list
-    # print(type(separated[0][0][0])) float
-    return separated
+    # print("separated")
+    # print(separated)
+    return separated # dict list list float
 
 # Phan chia tap du lieu thanh training va testing. Co the dung train_test_split
 def split_data(dataset, splitRatio):
@@ -42,7 +41,7 @@ def split_data(dataset, splitRatio):
 
 # tinh toan gia tri trung binh cua moi thuoc tinh
 def mean(numbers):
-    # print(type(numbers)) # tupple(float)
+    # number: tupple(float, float ...) ca cot thuoc tinh
     return sum(numbers) / float(len(numbers))
 
 # Tinh toan do lech chuan cho tung thuoc tinh
@@ -53,6 +52,7 @@ def standard_deviation(numbers):
         b = pow(x - avg, 2)
         a.append(b)
     variance = sum(a) / float(len(numbers) - 1)
+    
     # variance = sum([pow(x - avg, 2) for x in numbers]) / float(len(numbers) - 1)
     # print(type(variance)) # float
     return math.sqrt(variance)
@@ -62,7 +62,11 @@ def summarize(dataset):
     # print(type(dataset)) list
     # print(type(dataset[0])) list
     # print(type(dataset[0][0])) float
-    summaries = [(mean(attribute), standard_deviation(attribute)) for attribute in zip(*dataset)]
+    # summaries = [(mean(attribute), standard_deviation(attribute)) for attribute in zip(*dataset)]
+
+    summaries = []
+    for attribute in zip(*dataset):
+        summaries.append((mean(attribute), standard_deviation(attribute)))
     del summaries[-1]
     # print(type(summaries)) list
     # print(type(summaries[0])) tuple
@@ -75,7 +79,6 @@ def summarize_by_class(dataset):
     # print(type(dataset[0])) list
     # print(type(dataset[0][0])) float
     separated = separate_data(dataset) # dict
-
     summaries = {}
     for classValue, instances in separated.items():
         # print(type(classValue), type(instances)) float list
@@ -83,6 +86,7 @@ def summarize_by_class(dataset):
     # for classValue, instances in summaries.items():
         # print(type(instances[0])) tuple
         # print(type(classValue), type(instances)) float, list tuple float
+
     return summaries
 
 # Tinh toan xac suat theo phan phoi Gause cua bien lien tuc
@@ -90,17 +94,20 @@ def summarize_by_class(dataset):
 
 def calculate_prob(x, mean, stdev):
     exponent = math.exp(-(math.pow(x - mean, 2) / (2 * math.pow(stdev, 2))))
-
-    return (1 / (math.sqrt(2 * math.pi) * stdev)) * exponent
+    # print(type(exponent)) float
+    return (1 / (math.sqrt(2 * math.pi) * stdev)) * exponent # float
 
 # Tinh xac suat cho moi thuoc tinh phan chia theo class
 def calculate_class_prob(summaries, inputVector):
     probabilities = {}
     for classValue, classSummaries in summaries.items():
+        # print(type(classSummaries)) # list
         probabilities[classValue] = 1
         for i in range(len(classSummaries)):
             mean, stdev = classSummaries[i]
-            x = inputVector[i]
+            
+            # print(type(mean), type(stdev)) float float
+            x = inputVector[i] # float
             probabilities[classValue] *= calculate_prob(x, mean, stdev)
 
     return probabilities
@@ -108,7 +115,7 @@ def calculate_class_prob(summaries, inputVector):
 # Du doan vector thuoc phan lop nao
 
 def predict(summaries, inputVector):
-    probabilities = calculate_class_prob(summaries, inputVector)
+    probabilities = calculate_class_prob(summaries, inputVector) # dict<double, double>
     bestLabel, bestProb = None, -1
     for classValue, probability in probabilities.items():
         if bestLabel is None or probability > bestProb:
@@ -129,7 +136,6 @@ def get_predictions(summaries, testSet):
     return predictions # list float
 
 # Tinh toan do chinh xac cua phan lop
-
 def get_accuracy(testSet, predictions):
     correct = 0
     for i in range(len(testSet)):
@@ -148,18 +154,19 @@ def get_data_label(dataset):
     return data, label
 
 def main():
-    filename = 'diabetes.csv'
+    filename = 'diabetes2.csv'
     splitRatio = 0.8
     dataset = load_data(filename) # list list float
+    print(dataset)
     trainingSet, testSet = split_data(dataset, splitRatio) # type list
     print('Data size {0} \nTraining Size={1} \nTest Size={2}'.format(len(dataset), len(trainingSet), len(testSet)))
-
     # prepare model
     summaries = summarize_by_class(trainingSet)
     # get_data_label(trainingSet)
     # test model
     predictions = get_predictions(summaries, testSet)
-    accuracy = get_accuracy(testSet, predictions)
+    # print((predictions)) # list(float)
+    accuracy = get_accuracy(testSet, predictions) # float
     print('Accuracy of my implement: {0}%'.format(accuracy))
 
 

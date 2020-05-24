@@ -129,12 +129,57 @@ double get_accuracy(vector<vector<double>> test_set, vector<double> predictions)
     return (correct / double(test_set.size())) * 100.0;
 }
 
-// doc file
-vector<vector<double>> load_data(string filepath)
+/**
+ * Reads csv file into table, exported as a vector of vector of doubles.
+ * @param inputFileName input file name (full path).
+ * @return data as vector of vector of doubles.
+ */
+vector<vector<double>> load_data(string inputFileName)
 {
-    // Need data with format: vector<vector<double>>
-    // Example: [[0.0, 145.0, 0.0, 0.0, 0.0, 44.2, 0.63, 31.0, 1.0], [4.0, 99.0, 72.0, 17.0, 0.0, 25.6, 0.294, 28.0, 0.0], ...]
-    // [[row 1], [row 2], ...]
+
+    vector<vector<double>> data;
+    ifstream inputFile(inputFileName);
+    int l = 0;
+
+    while (inputFile)
+    {
+        l++;
+        string s;
+        if (!getline(inputFile, s))
+            break;
+        if (s[0] != '#')
+        {
+            istringstream ss(s);
+            vector<double> record;
+
+            while (ss)
+            {
+                string line;
+                if (!getline(ss, line, ','))
+                    break;
+                try
+                {
+                    record.push_back(stof(line));
+                }
+                catch (const std::invalid_argument e)
+                {
+                    cout << "NaN found in file " << inputFileName << " line " << l
+                         << endl;
+                    e.what();
+                }
+            }
+
+            data.push_back(record);
+        }
+    }
+
+    if (!inputFile.eof())
+    {
+        cerr << "Could not read file " << inputFileName << "\n";
+        __throw_invalid_argument("File not found.");
+    }
+
+    return data;
 }
 
 int main()

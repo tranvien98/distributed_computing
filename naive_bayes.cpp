@@ -2,6 +2,59 @@
 
 using namespace std;
 
+/**
+ * Reads csv file into table, exported as a vector of vector of doubles.
+ * @param inputFileName input file name (full path).
+ * @return data as vector of vector of doubles.
+ */
+vector<vector<double>> load_data(string inputFileName)
+{
+
+    vector<vector<double>> data;
+    ifstream inputFile(inputFileName);
+    int l = 0;
+
+    while (inputFile)
+    {
+        l++;
+        string s;
+        if (!getline(inputFile, s))
+            break;
+        if (s[0] != '#')
+        {
+            istringstream ss(s);
+            vector<double> record;
+
+            while (ss)
+            {
+                string line;
+                if (!getline(ss, line, ','))
+                    break;
+                try
+                {
+                    record.push_back(stof(line));
+                }
+                catch (const std::invalid_argument e)
+                {
+                    cout << "NaN found in file " << inputFileName << " line " << l
+                         << endl;
+                    e.what();
+                }
+            }
+
+            data.push_back(record);
+        }
+    }
+
+    if (!inputFile.eof())
+    {
+        cerr << "Could not read file " << inputFileName << "\n";
+        __throw_invalid_argument("File not found.");
+    }
+
+    return data;
+}
+
 void zip(vector<vector<double>> &b)
 {
     if (b.size() == 0)
@@ -129,59 +182,6 @@ double get_accuracy(vector<vector<double>> test_set, vector<double> predictions)
     return (correct / double(test_set.size())) * 100.0;
 }
 
-/**
- * Reads csv file into table, exported as a vector of vector of doubles.
- * @param inputFileName input file name (full path).
- * @return data as vector of vector of doubles.
- */
-vector<vector<double>> load_data(string inputFileName)
-{
-
-    vector<vector<double>> data;
-    ifstream inputFile(inputFileName);
-    int l = 0;
-
-    while (inputFile)
-    {
-        l++;
-        string s;
-        if (!getline(inputFile, s))
-            break;
-        if (s[0] != '#')
-        {
-            istringstream ss(s);
-            vector<double> record;
-
-            while (ss)
-            {
-                string line;
-                if (!getline(ss, line, ','))
-                    break;
-                try
-                {
-                    record.push_back(stof(line));
-                }
-                catch (const std::invalid_argument e)
-                {
-                    cout << "NaN found in file " << inputFileName << " line " << l
-                         << endl;
-                    e.what();
-                }
-            }
-
-            data.push_back(record);
-        }
-    }
-
-    if (!inputFile.eof())
-    {
-        cerr << "Could not read file " << inputFileName << "\n";
-        __throw_invalid_argument("File not found.");
-    }
-
-    return data;
-}
-
 int main()
 {
     double split_ratio = 0.8;
@@ -190,6 +190,7 @@ int main()
     double train_size = dataset.size() * split_ratio;
     vector<vector<double>> train_set;
     vector<vector<double>> test_set = dataset;
+    srand((int) time(0));
     while (train_set.size() < train_size)
     {
         int index = rand() % test_set.size();
@@ -200,6 +201,6 @@ int main()
     map<double, vector<tuple<double, double>>> summaries = summarize_by_class(train_set);
     vector<double> predictions = get_predictions(summaries, test_set);
     double accuracy = get_accuracy(test_set, predictions);
-    cout << "Accuracy of my implement: " << accuracy << "%";
+    cout << "Accuracy of my implement: " << accuracy << "%\n";
     return 0;
 }

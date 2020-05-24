@@ -200,6 +200,6 @@ int main()
     map<double, vector<tuple<double, double>>> summaries = summarize_by_class(train_set);
     vector<double> predictions = get_predictions(summaries, test_set);
     double accuracy = get_accuracy(test_set, predictions);
-    cout << "Accuracy of my implement: " << accuracy;
+    cout << "Accuracy of my implement: " << accuracy << "%";
     return 0;
 }

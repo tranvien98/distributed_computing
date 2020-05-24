@@ -55,11 +55,7 @@ map<double, vector<vector<double>>> separate_data(vector<vector<double>> dataset
     for (int i = 0; i < dataset.size(); i++)
     {
         vector<double> vec = dataset.at(i);
-        if (count(separated.begin(), separated.end(), vec.back()))
-        {
-        }
-        else
-            // BUG: using vector.at()?
+        if (!separated.count(vec.back()))
             separated[vec.back()] = vector<vector<double>>();
         separated[vec.back()].push_back(vec);
     }

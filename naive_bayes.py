@@ -16,19 +16,17 @@ def load_data(filename):
 # Phan chia tap du lieu theo class
 def separate_data(dataset):
     # print(type(dataset)) list list float
+    # print("dataset")
+    # print(dataset)
     separated = {}
     for i in range(len(dataset)):
         vector = dataset[i]
         if (vector[-1] not in separated):
             separated[vector[-1]] = []
         separated[vector[-1]].append(vector)
-        # print("bat dauuuuuuuuuuuuuuuuuuuuu", separated[vector[-1]], "ketsttttttttttttttttttttttttt", vector[-1])
-
-    # print(type(separated)) dict
-    # print(type(separated[0])) list
-    # print(type(separated[0][0])) list
-    # print(type(separated[0][0][0])) float
-    return separated
+    # print("separated")
+    # print(separated)
+    return separated # dict list list float
 
 # Phan chia tap du lieu thanh training va testing. Co the dung train_test_split
 def split_data(dataset, splitRatio):
@@ -159,9 +157,9 @@ def main():
     filename = 'diabetes2.csv'
     splitRatio = 0.8
     dataset = load_data(filename) # list list float
+    print(dataset)
     trainingSet, testSet = split_data(dataset, splitRatio) # type list
     print('Data size {0} \nTraining Size={1} \nTest Size={2}'.format(len(dataset), len(trainingSet), len(testSet)))
-    print(testSet)
     # prepare model
     summaries = summarize_by_class(trainingSet)
     # get_data_label(trainingSet)

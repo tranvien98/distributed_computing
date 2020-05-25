@@ -5,7 +5,7 @@
 #include <cmath>
 #include <time.h>
 #include <iostream>
-#include <bits/stdc++.h> 
+#include <bits/stdc++.h>
 
 #define N_COT 9
 using namespace std;
@@ -21,12 +21,12 @@ vector<string> split (const string &s, char delim) {
     return result;
 }
 
-vector<double> readByColumn(int pos) {
+vector<double> readByColumn(string filename, int pos) {
     ifstream fin;
     string line2;
     vector<double> result;
     // Open an existing file
-    fin.open("diabetes.csv");
+    fin.open(filename);
     while(!fin.eof()){
        fin>>line2;
        vector<string> temp = split(line2, ',');
@@ -57,7 +57,7 @@ double maxValue(vector<double> item) {
 vector<double> standardVector() {
     vector<double> standard;
     for(int i = 1; i < 9; i++) {
-        standard.push_back(maxValue(readByColumn(i)));
+        standard.push_back(maxValue(readByColumn("diabetes.csv",i)));
     }
     standard.push_back(1);
     return standard;
@@ -73,39 +73,68 @@ vector<double> standardize(vector<double> standard, vector<double> item) {
     return result;
 }
 
-vector<vector<vector<double>>> makeTrainAndTestData(int test, int train) {
+vector<vector<vector<double>>> makeTrainAndTestData(string filename, float train) {
+    // lay du lieu ra tu file, nhan 1 luu vao true_lable_data, nhan 0 luu vao false_lable_data
     ifstream fin;
     string line;
-    vector<vector<vector<double>>> data;
-    fin.open("diabetes.csv");
-    // co 684 nhan 1, 1316 nhan 0
-    int test_1 = (684/10)*test;
-    int test_0 = (1316/10)*test;
-    int i = 0, j = 0;
-    vector<vector<double>> testData;
-    vector<vector<double>> trainData;
+    fin.open(filename);
+    // diabetes.csv
+    vector<vector<double>> true_lable_data;
+    vector<vector<double>> false_lable_data;
     while(!fin.eof()){
        fin>>line;
        vector<double> temp = convert(split(line, ','));
        //temp = convert(temp);
        if(temp[8] != 0) {
-            if(i < test_1) {
-                testData.push_back(temp);
-                i++;
-              } else {
-                trainData.push_back(temp);
-              }
-       } else {
-           if(j < test_0) {
-            testData.push_back(temp);
-            j++;
-           } else {
-            trainData.push_back(temp);
-           }
+            true_lable_data.push_back(temp);
+        } else {
+            false_lable_data.push_back(temp);
        }
     }
-    data.push_back(testData);
-    data.push_back(trainData);
+
+    // tinh toan so diem du lieu cho tap test
+    vector<double> lables = readByColumn(filename,9);
+    int true_lable = 0; // so diem du lieu co nhan 1
+    int false_lable = 0; // so diem du lieu co nhan 0
+    for(auto lable: lables) {
+        if (lable == 1) true_lable++;
+    }
+    false_lable = lables.size() - true_lable;
+
+    // so nhan 1 trong tap test
+    int test_true_lable = ceil(true_lable*(1-train));
+    // so nhan 0 trong tap test
+    int test_false_lable = ceil(false_lable*(1-train));
+
+    // tap du lieu test
+    vector<vector<double>> test_data;
+    // them cac diem co nhan 1 vao tap test
+    srand((int) time(0));
+    for(int i = 0; i < test_true_lable; i++) {
+        int index = rand() % true_lable_data.size();
+        test_data.push_back(true_lable_data.at(index));
+        true_lable_data.erase(true_lable_data.begin() + index);
+    }
+
+    //them cac diem co nhan 0 vao tap test
+    srand((int) time(0));
+    for(int j = 0; j < test_false_lable; j++) {
+        int index = rand() % false_lable_data.size();
+        test_data.push_back(false_lable_data.at(index));
+        false_lable_data.erase(false_lable_data.begin() + index);
+    }
+
+    // tap du lieu train
+    vector<vector<double>> train_data;
+    // them phan con lai cua tap du lieu chua nhan 1 va 0 vao trai_data
+    train_data.insert(train_data.begin(), true_lable_data.begin(), true_lable_data.end());
+	train_data.insert(train_data.end(), false_lable_data.begin(), false_lable_data.end());
+
+    vector<vector<vector<double>>> data;
+    // data[0] la test, data[1] la train
+    data.push_back(test_data);
+    data.push_back(train_data);
+
     return data;
 }
 
@@ -149,10 +178,10 @@ double accuracy(vector<double> y, vector<double> y_pre){
     {
         cout << "Size y and y_pre different" << endl;
         return 0;
-    } 
+    }
 }
 
-// tinh accuracy cua tap test voi bo weight 
+// tinh accuracy cua tap test voi bo weight
 double evaluate(vector<vector<double>> test, vector<double> w){
 
     vector<double> y, y_pre;
@@ -169,34 +198,34 @@ double evaluate(vector<vector<double>> test, vector<double> w){
 vector<double> logistic_regression(vector<vector<double>> train, vector<vector<double>> test, int numOfIteration, double learning_rate )
 {
     int i,j,k ;
-    vector<double> w ,deta_w, x; 
+    vector<double> w ,deta_w, x;
     double y_pre, y, loss;
-    // khoi tai weight 
+    // khoi tai weight
     for (i=0; i<N_COT; i++){
         double r = (double) rand()/RAND_MAX;
         w.push_back(r);
         deta_w.push_back(0);
         x.push_back(0);
     }
-    
+
     for (i=0; i < numOfIteration; i++){
         loss = 0;
         for (k=0; k<=N_COT; k++){
                 deta_w[k] = 0;
         }
         for (j =0; j < train.size(); j++){
-            
+
             for (k=0; k<N_COT; k++){
                 x[k] = train[j][k];
             }
-            
+
 
             y_pre = sigmoid(y_predict(w,x));
             y = train[j][N_COT];
 
             // cap nhat loss
             loss += cost(y_pre, y);
-            
+
 
             for (k=0; k<=N_COT; k++){
                 deta_w[k] += (y_pre - y)*x[k];
@@ -205,19 +234,19 @@ vector<double> logistic_regression(vector<vector<double>> train, vector<vector<d
 
         loss = loss/train.size();
         cout << loss << "--" << evaluate(test, w) << "%" << endl;
-        
+
         // cap nhat weight bang thuat toan Gradient descent
         for (k=0; k<=N_COT; k++){
             w[k] = w[k] - learning_rate*deta_w[k];
         }
-        
+
     }
     return w;
 }
 
 int main()
 {
-    vector<vector<vector<double>>> data = makeTrainAndTestData(2,8);
+    vector<vector<vector<double>>> data = makeTrainAndTestData("diabetes.csv", 0.7);
     //data[0] là test, data[1] là train
 
      // vector dung chuan hoa
@@ -238,10 +267,9 @@ int main()
         train.push_back(x);
     }
 
-    int numOfIteration = 500; // so lan lap thuat toan 
+    int numOfIteration = 500; // so lan lap thuat toan
     double learning_rate = 0.003;
     w = logistic_regression(train, test, numOfIteration, learning_rate);
     for (auto a : w) cout << a << ',';
     return 0;
 }
-    

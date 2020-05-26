@@ -7,7 +7,6 @@
 #include <iostream>
 #include <bits/stdc++.h>
 
-#define N_COT 9
 using namespace std;
 
 vector<string> split (const string &s, char delim) {
@@ -173,7 +172,7 @@ double accuracy(vector<double> y, vector<double> y_pre){
                 sum += 1;
             }
         }
-        return double(sum)/y.size();
+        return double(sum)*100/y.size();
     }else
     {
         cout << "Size y and y_pre different" << endl;
@@ -182,71 +181,91 @@ double accuracy(vector<double> y, vector<double> y_pre){
 }
 
 // tinh accuracy cua tap test voi bo weight
-double evaluate(vector<vector<double>> test, vector<double> w){
+vector<double> evaluate(vector<vector<double>> test, vector<double> w){
 
-    vector<double> y, y_pre;
+    vector<double> y, y_pre, rel;
+    double loss = 0, y_temp;
+    int n_col = test[0].size() - 1;
     for(auto item : test){
-        y.push_back(item[N_COT]);
+        y.push_back(item[n_col]);
         item.pop_back();
-        y_pre.push_back(sigmoid(y_predict(w,item)));
+        y_temp = sigmoid(y_predict(w,item));
+        y_pre.push_back(y_temp);
+        loss += cost(y_temp, item[n_col]);
     }
-    return accuracy(y,y_pre);
+    loss = loss/test.size();
+    rel.push_back(loss);
+    rel.push_back(accuracy(y,y_pre));
+    return rel;
 }
 
 
 
-vector<double> logistic_regression(vector<vector<double>> train, vector<vector<double>> test, int numOfIteration, double learning_rate )
+void logistic_regression(vector<vector<double>> train, vector<vector<double>> test, int numOfIteration, double learning_rate )
 {
     int i,j,k ;
-    vector<double> w ,deta_w, x;
-    double y_pre, y, loss;
+    vector<double> w ,deta_w, x , y, y_pre;
+    double y_pre_temp, y_temp, loss, acc_train;
+
+    int n_col = train[0].size() -1;
     // khoi tai weight
-    for (i=0; i<N_COT; i++){
+    for (i=0; i<n_col; i++){
         double r = (double) rand()/RAND_MAX;
         w.push_back(r);
         deta_w.push_back(0);
         x.push_back(0);
     }
-
+    for(auto item : train){
+        y.push_back(item[n_col]);
+        y_pre.push_back(0);
+    }
+    ofstream file1, file2;
+    file1.open ("result.txt");
+    file2.open ("weight.txt");
+    
     for (i=0; i < numOfIteration; i++){
         loss = 0;
-        for (k=0; k<=N_COT; k++){
+        for (k=0; k<=n_col; k++){
                 deta_w[k] = 0;
         }
         for (j =0; j < train.size(); j++){
 
-            for (k=0; k<N_COT; k++){
+            for (k=0; k<n_col; k++){
                 x[k] = train[j][k];
             }
 
 
-            y_pre = sigmoid(y_predict(w,x));
-            y = train[j][N_COT];
-
+            y_pre_temp = sigmoid(y_predict(w,x));
+            // y_temp = train[j][n_col];
+            y_pre[j] = y_pre_temp;
             // cap nhat loss
-            loss += cost(y_pre, y);
+            loss += cost(y_pre_temp, y[j]);
 
 
-            for (k=0; k<=N_COT; k++){
-                deta_w[k] += (y_pre - y)*x[k];
+            for (k=0; k<=n_col; k++){
+                deta_w[k] += (y_pre_temp - y[j])*x[k];
             }
         }
 
-        loss = loss/train.size();
-        cout << loss << "--" << evaluate(test, w) << "%" << endl;
-
         // cap nhat weight bang thuat toan Gradient descent
-        for (k=0; k<=N_COT; k++){
+        for (k=0; k<=n_col; k++){
             w[k] = w[k] - learning_rate*deta_w[k];
+            file2 << w[k] << ";";
         }
-
+        file2 << endl;
+        loss = loss/train.size();
+        acc_train = accuracy(y,y_pre);
+        vector<double> result_test = evaluate(test, w);
+        file1 << loss << "__" << acc_train << '%' << "__" << result_test[0] << "__" << result_test[1] << "%" << endl;
+        cout << loss << "__" << acc_train << '%' << "__" << result_test[0] << "__" << result_test[1] << "%" << endl;
     }
-    return w;
+    file1.close();
+    file2.close();
 }
 
 int main()
 {
-    vector<vector<vector<double>>> data = makeTrainAndTestData("diabetes.csv", 0.7);
+    vector<vector<vector<double>>> data = makeTrainAndTestData("diabetes.csv", 0.8);
     //data[0] là test, data[1] là train
 
      // vector dung chuan hoa
@@ -267,9 +286,8 @@ int main()
         train.push_back(x);
     }
 
-    int numOfIteration = 500; // so lan lap thuat toan
-    double learning_rate = 0.003;
-    w = logistic_regression(train, test, numOfIteration, learning_rate);
-    for (auto a : w) cout << a << ',';
+    int numOfIteration = 1000; // so lan lap thuat toan
+    double learning_rate = 0.002;
+    logistic_regression(train, test, numOfIteration, learning_rate);
     return 0;
 }

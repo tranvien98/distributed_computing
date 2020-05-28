@@ -137,7 +137,7 @@ int main()
     //in ra vector thu 4 cua tap train sau chuan hoa
     vector<double> x = train[0];
     cout << x.size() << endl;
-     for(auto item : x)
+    for(auto item : x)
         cout << item << endl;
     x.pop_back();
     cout << x.size() << endl;

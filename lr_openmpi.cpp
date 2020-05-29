@@ -5,7 +5,6 @@
 #include <cmath>
 #include <time.h>
 #include <iostream>
-#include <omp.h>
 #include <bits/stdc++.h>
 
 using namespace std;
@@ -152,6 +151,7 @@ double y_predict(vector<double> w,vector<double> x){
     if (w.size() == x.size()){
         double y_pre = 0;
         int i;
+        // #pragma omp parallel for
         for (i =0; i < w.size(); i++){
             y_pre += w[i]*x[i];
         }
@@ -165,11 +165,10 @@ double y_predict(vector<double> w,vector<double> x){
 
 // tinh do chinh xac
 double accuracy(vector<double> y, vector<double> y_pre){
-    int sum = 0;
+    // int sum = 0;
     if (y.size() == y_pre.size()){
-        int i;
-        #pragma omp parallel for \
-            reduction(+:sum)
+        int i, sum = 0;
+        #pragma omp parallel for
         for (i =0; i < y.size(); i++){
             if((y[i] == 0 && y_pre[i] < 0.5) || (y[i] == 1 && y_pre[i] >= 0.5)){
                 sum += 1;
@@ -186,15 +185,16 @@ double accuracy(vector<double> y, vector<double> y_pre){
 // tinh accuracy cua tap test voi bo weight
 vector<double> evaluate(vector<vector<double>> test, vector<double> w){
 
-    vector<double> y, y_pre, rel;
+    vector<double> y(test.size(),0), y_pre(test.size(),0), rel;
     double loss = 0, y_temp;
     int n_col = test[0].size() - 1;
-    for(auto item : test){
-        y.push_back(item[n_col]);
-        item.pop_back();
-        y_temp = sigmoid(y_predict(w,item));
-        y_pre.push_back(y_temp);
-        loss += cost(y_temp, item[n_col]);
+    #pragma omp parallel for private(y_temp) shared(loss, y, y_pre, test, n_col)
+    for(int i=0; i< test.size(); i++){
+        y[i] = test[i][n_col];
+        test[i].pop_back();
+        y_temp = sigmoid(y_predict(w,test[i]));
+        y_pre[i] = y_temp;
+        loss += cost(y_temp, y[i]);
     }
     loss = loss/test.size();
     rel.push_back(loss);
@@ -206,36 +206,37 @@ vector<double> evaluate(vector<vector<double>> test, vector<double> w){
 
 void logistic_regression(vector<vector<double>> train, vector<vector<double>> test, int numOfIteration, double learning_rate )
 {
-    
-    int i,j,k ;
-    vector<double> w ,deta_w, x , y, y_pre;
-    double y_pre_temp, y_temp, loss, acc_train, r;
-
     int n_col = train[0].size() -1;
+    // int i,j,k ;
+    vector<double> w(n_col,0.0),deta_w(n_col,0.0), x(n_col,0.0) , y(train.size(),0), y_pre(train.size(),0);
+    double y_pre_temp, y_temp, loss, acc_train, r;
+    // #pragma omp parallel
     // khoi tai weight
-    #pragma omp parallel for private(r)
-    for (i=0; i<n_col; i++){
+    // #pragma omp parallel for
+    for (int i=0; i<n_col; i++){
         r = (double) rand()/RAND_MAX;
-        w.push_back(r);
-        deta_w.push_back(0);
-        x.push_back(0);
+        w[i] = r;
     }
-    for(auto item : train){
-        y.push_back(item[n_col]);
-        y_pre.push_back(0);
+    // #pragma omp parallel for
+    for(int i=0; i < train.size(); i++){
+        y[i] = train[i][n_col];
     }
+
     ofstream file1, file2;
     file1.open ("result.txt");
     file2.open ("weight.txt");
     
-    for (i=0; i < numOfIteration; i++){
+    for (int i=0; i < numOfIteration; i++){
         loss = 0;
-        #pragma omp parallel
-        for (k=0; k<n_col; k++){
+        // #pragma omp parallel
+
+        #pragma omp parallel for
+        for (int k=0; k<n_col; k++){
                 deta_w[k] = 0;
         }
-        #pragma omp parallel for private(j, k, y_pre_temp, x) shared(loss, deta_w, y, y_pre, train, n_col)
-        for (j =0; j < train.size(); j++){
+        #pragma omp parallel for private(y_pre_temp, x) shared(loss, deta_w, y, y_pre, train, n_col) num_threads(8)
+            
+        for (int j =0; j < train.size(); j++){
 
             // for (k=0; k<n_col; k++){
             //     x[k] = train[j][k];
@@ -249,19 +250,17 @@ void logistic_regression(vector<vector<double>> train, vector<vector<double>> te
             // cap nhat loss
             loss += cost(y_pre_temp, y[j]);
 
-
-            for (k=0; k<n_col; k++){
+            #pragma omp parallel for
+            for (int k=0; k<n_col; k++){
                 deta_w[k] += (y_pre_temp - y[j])*x[k];
             }
         }
-        #pragma omp barrier
+        // #pragma omp barrier
         // cap nhat weight bang thuat toan Gradient descent
-        #pragma omp for
-        for (k=0; k<n_col; k++){
+        for (int k=0; k<n_col; k++){
             w[k] = w[k] - learning_rate*deta_w[k];
             file2 << w[k] << ";";
         }
-        #pragma omp end parallel
         file2 << endl;
         loss = loss/train.size();
         acc_train = accuracy(y,y_pre);
@@ -269,12 +268,15 @@ void logistic_regression(vector<vector<double>> train, vector<vector<double>> te
         file1 << loss << "__" << acc_train << '%' << "__" << result_test[0] << "__" << result_test[1] << "%" << endl;
         // cout << loss << "__" << acc_train << '%' << "__" << result_test[0] << "__" << result_test[1] << "%" << endl;
     }
+    // #pragma omp end parallel
     file1.close();
     file2.close();
 }
 
 int main()
 {
+    clock_t start, end;
+    start = clock(); 
     vector<vector<vector<double>>> data = makeTrainAndTestData("diabetes.csv", 0.8);
     //data[0] là test, data[1] là train
 
@@ -282,28 +284,30 @@ int main()
     vector<double> standard = standardVector();
 
     // tạp test sau khi chuan hoa
-    vector<vector<double>> test;
-    vector<double> x , w;
-    for(auto item : data[0]) {
-        x = standardize(standard,item);
+    vector<vector<double>> test(data[0].size(),vector<double>(standard.size()+1));
+    vector<double> x ;
+    #pragma omp parallel
+    #pragma omp parallel for private(x) shared(data, test)
+    for(int i=0; i < data[0].size(); i++) {
+        x = standardize(standard,data[0][i]);
         x.insert(x.begin(),1);
-        test.push_back(x);
+        test[i] = x;
     }
-    vector<vector<double>> train;
-    for(auto item : data[1]) {
-        x = standardize(standard,item);
+    vector<vector<double>> train(data[1].size(),vector<double>(standard.size()+1));
+    #pragma omp parallel for private(x) shared(data, train)
+    for(int i=0; i < data[1].size(); i++) {
+        x = standardize(standard,data[1][i]);
         x.insert(x.begin(),1);
-        train.push_back(x);
+        train[i] = x;
     }
 
     int numOfIteration = 1000; // so lan lap thuat toan
-    double learning_rate = 0.002;
-    clock_t start, end;
-    start = clock(); 
+    double learning_rate = 0.001;
     logistic_regression(train, test, numOfIteration, learning_rate);
+    // #pragma omp end parallel
     end = clock(); 
     double time_taken = double(end - start) / double(CLOCKS_PER_SEC); 
-    cout << "Time taken by logistic_regression is : " << fixed  
+    cout << "Time taken by program is : " << fixed  
          << time_taken << setprecision(5); 
     cout << " sec " << endl; 
     return 0;

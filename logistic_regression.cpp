@@ -183,15 +183,16 @@ double accuracy(vector<double> y, vector<double> y_pre){
 // tinh accuracy cua tap test voi bo weight
 vector<double> evaluate(vector<vector<double>> test, vector<double> w){
 
-    vector<double> y, y_pre, rel;
+    vector<double> y(test.size(),0), y_pre(test.size(),0), rel;
     double loss = 0, y_temp;
     int n_col = test[0].size() - 1;
-    for(auto item : test){
-        y.push_back(item[n_col]);
-        item.pop_back();
-        y_temp = sigmoid(y_predict(w,item));
-        y_pre.push_back(y_temp);
-        loss += cost(y_temp, item[n_col]);
+    int i;
+    for(i=0; i< test.size(); i++){
+        y[i] = test[i][n_col];
+        test[i].pop_back();
+        y_temp = sigmoid(y_predict(w,test[i]));
+        y_pre[i] = y_temp;
+        loss += cost(y_temp, y[i]);
     }
     loss = loss/test.size();
     rel.push_back(loss);
@@ -203,21 +204,18 @@ vector<double> evaluate(vector<vector<double>> test, vector<double> w){
 
 void logistic_regression(vector<vector<double>> train, vector<vector<double>> test, int numOfIteration, double learning_rate )
 {
-    int i,j,k ;
-    vector<double> w ,deta_w, x , y, y_pre;
-    double y_pre_temp, y_temp, loss, acc_train;
-
     int n_col = train[0].size() -1;
+    int i,j,k ;
+    vector<double> w(n_col,0.0),deta_w(n_col,0.0), x(n_col,0.0) , y(train.size(),0), y_pre(train.size(),0);
+    double y_pre_temp, y_temp, loss, acc_train, r;
+
     // khoi tai weight
     for (i=0; i<n_col; i++){
-        double r = (double) rand()/RAND_MAX;
-        w.push_back(r);
-        deta_w.push_back(0);
-        x.push_back(0);
+        r = (double) rand()/RAND_MAX;
+        w[i] = r;
     }
-    for(auto item : train){
-        y.push_back(item[n_col]);
-        y_pre.push_back(0);
+    for(i=0; i < train.size(); i++){
+        y[i] = train[i][n_col];
     }
     ofstream file1, file2;
     file1.open ("result.txt");
@@ -230,10 +228,11 @@ void logistic_regression(vector<vector<double>> train, vector<vector<double>> te
         }
         for (j =0; j < train.size(); j++){
 
-            for (k=0; k<n_col; k++){
-                x[k] = train[j][k];
-            }
-
+            // for (k=0; k<n_col; k++){
+            //     x[k] = train[j][k];
+            // }
+            x = train[j];
+            x.pop_back();
 
             y_pre_temp = sigmoid(y_predict(w,x));
             // y_temp = train[j][n_col];
@@ -257,7 +256,7 @@ void logistic_regression(vector<vector<double>> train, vector<vector<double>> te
         acc_train = accuracy(y,y_pre);
         vector<double> result_test = evaluate(test, w);
         file1 << loss << "__" << acc_train << '%' << "__" << result_test[0] << "__" << result_test[1] << "%" << endl;
-        cout << loss << "__" << acc_train << '%' << "__" << result_test[0] << "__" << result_test[1] << "%" << endl;
+        // cout << loss << "__" << acc_train << '%' << "__" << result_test[0] << "__" << result_test[1] << "%" << endl;
     }
     file1.close();
     file2.close();
@@ -265,6 +264,8 @@ void logistic_regression(vector<vector<double>> train, vector<vector<double>> te
 
 int main()
 {
+    clock_t start, end;
+    start = clock(); 
     vector<vector<vector<double>>> data = makeTrainAndTestData("diabetes.csv", 0.8);
     //data[0] là test, data[1] là train
 
@@ -272,28 +273,28 @@ int main()
     vector<double> standard = standardVector();
 
     // tạp test sau khi chuan hoa
-    vector<vector<double>> test;
-    vector<double> x , w;
-    for(auto item : data[0]) {
-        x = standardize(standard,item);
+    vector<vector<double>> test(data[0].size(),vector<double>(standard.size()+1));
+    vector<double> x ;
+    int i;
+    for(i=0; i < data[0].size(); i++) {
+        x = standardize(standard,data[0][i]);
         x.insert(x.begin(),1);
-        test.push_back(x);
+        test[i] = x;
     }
-    vector<vector<double>> train;
-    for(auto item : data[1]) {
-        x = standardize(standard,item);
+    vector<vector<double>> train(data[1].size(),vector<double>(standard.size()+1));
+    for(i=0; i < data[1].size(); i++) {
+        x = standardize(standard,data[1][i]);
         x.insert(x.begin(),1);
-        train.push_back(x);
+        train[i] = x;
     }
 
     int numOfIteration = 1000; // so lan lap thuat toan
-    double learning_rate = 0.002;
-    clock_t start, end;
-    start = clock(); 
+    double learning_rate = 0.001;
+    
     logistic_regression(train, test, numOfIteration, learning_rate);
     end = clock(); 
     double time_taken = double(end - start) / double(CLOCKS_PER_SEC); 
-    cout << "Time taken by logistic_regression is : " << fixed  
+    cout << "Time taken by program is : " << fixed  
          << time_taken << setprecision(5); 
     cout << " sec " << endl; 
     return 0;

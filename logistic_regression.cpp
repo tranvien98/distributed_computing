@@ -276,17 +276,31 @@ int main()
     vector<vector<double>> test(data[0].size(),vector<double>(standard.size()+1));
     vector<double> x ;
     int i;
+    clock_t start1, end1;
+    start1 = clock(); 
     for(i=0; i < data[0].size(); i++) {
         x = standardize(standard,data[0][i]);
         x.insert(x.begin(),1);
         test[i] = x;
     }
+    end1 = clock(); 
+    double time_taken1 = double(end1 - start1) / double(CLOCKS_PER_SEC); 
+    cout << "Time taken by test is : " << fixed  
+         << time_taken1 << setprecision(5); 
+    cout << " sec " << endl; 
     vector<vector<double>> train(data[1].size(),vector<double>(standard.size()+1));
+    start1 = clock(); 
     for(i=0; i < data[1].size(); i++) {
         x = standardize(standard,data[1][i]);
         x.insert(x.begin(),1);
         train[i] = x;
     }
+
+    end1 = clock(); 
+    time_taken1 = double(end1 - start1) / double(CLOCKS_PER_SEC); 
+    cout << "Time taken by train is : " << fixed  
+         << time_taken1 << setprecision(5); 
+    cout << " sec " << endl; 
 
     int numOfIteration = 1000; // so lan lap thuat toan
     double learning_rate = 0.001;

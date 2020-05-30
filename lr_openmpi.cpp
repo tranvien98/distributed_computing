@@ -4,7 +4,8 @@
 #include <vector>
 #include <cmath>
 #include <time.h>
-#include <iostream>
+#include <stdlib.h>
+#include <omp.h>
 #include <bits/stdc++.h>
 
 using namespace std;
@@ -150,9 +151,8 @@ double cost(double y_pre, double y){
 double y_predict(vector<double> w,vector<double> x){
     if (w.size() == x.size()){
         double y_pre = 0;
-        int i;
-        // #pragma omp parallel for
-        for (i =0; i < w.size(); i++){
+        // #pragma omp parallel for reduction(+:y_pre)
+        for (int i =0; i < w.size(); i++){
             y_pre += w[i]*x[i];
         }
         return y_pre;
@@ -167,9 +167,9 @@ double y_predict(vector<double> w,vector<double> x){
 double accuracy(vector<double> y, vector<double> y_pre){
     // int sum = 0;
     if (y.size() == y_pre.size()){
-        int i, sum = 0;
-        #pragma omp parallel for
-        for (i =0; i < y.size(); i++){
+        int sum = 0;
+        #pragma omp parallel for reduction(+:sum) //num_threads(4) schedule(dynamic)
+        for (int i =0; i < y.size(); i++){
             if((y[i] == 0 && y_pre[i] < 0.5) || (y[i] == 1 && y_pre[i] >= 0.5)){
                 sum += 1;
             }
@@ -188,7 +188,8 @@ vector<double> evaluate(vector<vector<double>> test, vector<double> w){
     vector<double> y(test.size(),0), y_pre(test.size(),0), rel;
     double loss = 0, y_temp;
     int n_col = test[0].size() - 1;
-    #pragma omp parallel for private(y_temp) shared(loss, y, y_pre, test, n_col)
+    #pragma omp parallel for private(y_temp) shared(y, y_pre, test, n_col) \
+        reduction(+:loss)
     for(int i=0; i< test.size(); i++){
         y[i] = test[i][n_col];
         test[i].pop_back();
@@ -208,8 +209,9 @@ void logistic_regression(vector<vector<double>> train, vector<vector<double>> te
 {
     int n_col = train[0].size() -1;
     // int i,j,k ;
-    vector<double> w(n_col,0.0),deta_w(n_col,0.0), x(n_col,0.0) , y(train.size(),0), y_pre(train.size(),0);
+    vector<double> w(n_col,0.0), x(n_col,0.0) , y(train.size(),0), y_pre(train.size(),0);
     double y_pre_temp, y_temp, loss, acc_train, r;
+    double deta_w[n_col] = {};
     // #pragma omp parallel
     // khoi tai weight
     // #pragma omp parallel for
@@ -229,18 +231,15 @@ void logistic_regression(vector<vector<double>> train, vector<vector<double>> te
     for (int i=0; i < numOfIteration; i++){
         loss = 0;
         // #pragma omp parallel
-
-        #pragma omp parallel for
+        // #pragma omp parallel for
         for (int k=0; k<n_col; k++){
                 deta_w[k] = 0;
         }
-        #pragma omp parallel for private(y_pre_temp, x) shared(loss, deta_w, y, y_pre, train, n_col) num_threads(8)
-            
+
+        #pragma omp parallel for private(y_pre_temp, x) shared(y, y_pre, train, n_col) reduction(+:loss,deta_w[:n_col]) \
+            //collapse(2)
         for (int j =0; j < train.size(); j++){
 
-            // for (k=0; k<n_col; k++){
-            //     x[k] = train[j][k];
-            // }
             x = train[j];
             x.pop_back();
 
@@ -250,12 +249,12 @@ void logistic_regression(vector<vector<double>> train, vector<vector<double>> te
             // cap nhat loss
             loss += cost(y_pre_temp, y[j]);
 
-            #pragma omp parallel for
+            // #pragma omp parallel for
             for (int k=0; k<n_col; k++){
                 deta_w[k] += (y_pre_temp - y[j])*x[k];
             }
         }
-        // #pragma omp barrier
+        #pragma omp barrier
         // cap nhat weight bang thuat toan Gradient descent
         for (int k=0; k<n_col; k++){
             w[k] = w[k] - learning_rate*deta_w[k];
@@ -263,8 +262,16 @@ void logistic_regression(vector<vector<double>> train, vector<vector<double>> te
         }
         file2 << endl;
         loss = loss/train.size();
+        // #pragma omp sections
+        // #pragma omp sections
+        // #pragma omp critical
+        // {
+            
+        // };
+        
+        // #pragma omp sections
         acc_train = accuracy(y,y_pre);
-        vector<double> result_test = evaluate(test, w);
+        vector<double> result_test = evaluate(test, w); 
         file1 << loss << "__" << acc_train << '%' << "__" << result_test[0] << "__" << result_test[1] << "%" << endl;
         // cout << loss << "__" << acc_train << '%' << "__" << result_test[0] << "__" << result_test[1] << "%" << endl;
     }
@@ -283,26 +290,48 @@ int main()
      // vector dung chuan hoa
     vector<double> standard = standardVector();
 
+    
     // tạp test sau khi chuan hoa
     vector<vector<double>> test(data[0].size(),vector<double>(standard.size()+1));
     vector<double> x ;
-    #pragma omp parallel
+    // #pragma omp parallel
+    omp_set_num_threads(8);
+    // int nProcessors = omp_get_max_threads();
+    // cout << nProcessors << endl;
+    double time_taken1;
+    clock_t start1, end1;
+    start1 = clock(); 
     #pragma omp parallel for private(x) shared(data, test)
     for(int i=0; i < data[0].size(); i++) {
         x = standardize(standard,data[0][i]);
         x.insert(x.begin(),1);
         test[i] = x;
     }
+    end1 = clock(); 
+    time_taken1 = double(end1 - start1) / double(CLOCKS_PER_SEC); 
+    cout << "Time taken by test is : " << fixed  
+         << time_taken1 << setprecision(5); 
+    cout << " sec " << endl; 
     vector<vector<double>> train(data[1].size(),vector<double>(standard.size()+1));
+    start1 = clock(); 
     #pragma omp parallel for private(x) shared(data, train)
     for(int i=0; i < data[1].size(); i++) {
         x = standardize(standard,data[1][i]);
         x.insert(x.begin(),1);
         train[i] = x;
     }
+    // #pragma omp barrier
+    end1 = clock(); 
+    time_taken1 = double(end1 - start1) / double(CLOCKS_PER_SEC); 
+    cout << "Time taken by train is : " << fixed  
+         << time_taken1 << setprecision(5); 
+    cout << " sec " << endl; 
+    // int nProcessors = omp_get_max_threads();
+    // cout << nProcessors << endl;
 
     int numOfIteration = 1000; // so lan lap thuat toan
     double learning_rate = 0.001;
+    omp_set_nested(1);
     logistic_regression(train, test, numOfIteration, learning_rate);
     // #pragma omp end parallel
     end = clock(); 

@@ -246,9 +246,7 @@ void logistic_regression(vector<vector<double>> train, vector<vector<double>> te
         for (int k=0; k<n_col; k++){
                 deta_w[k] = 0;
         }
-        int a =0;
-        #pragma omp parallel
-        #pragma omp parallel for private(y_pre_temp, x, a) shared(y, y_pre, train, n_col) reduction(+:loss,deta_w[:n_col]) //collapse(2)
+        #pragma omp parallel for private(y_pre_temp, x) shared(y, y_pre, train, n_col) reduction(+:loss,deta_w[:n_col]) //collapse(2)
         for (int j =0; j < train.size(); j++){
 
             x = train[j];
@@ -300,7 +298,7 @@ int main()
     vector<vector<double>> test(data[0].size(),vector<double>(standard.size()+1));
     vector<double> x ;
     // #pragma omp parallel
-    omp_set_num_threads(2);
+    omp_set_num_threads(1);
     // int nProcessors = omp_get_max_threads();
     // cout << nProcessors << endl;
     // double time_taken1;

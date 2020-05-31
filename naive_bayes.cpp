@@ -1,7 +1,7 @@
 #include <bits/stdc++.h>
 
-#define NUM_THREAD 8
-
+clock_t start, start_;
+double handle_time;
 using namespace std;
 
 /**
@@ -84,7 +84,7 @@ float standard_deviation(vector<float> numbers)
 {
     float avg = mean(numbers);
     vector<float> a;
-    for (unsigned i = 0; i < numbers.size(); i++)
+    for (int i = 0; i < numbers.size(); i++)
         a.push_back(pow(numbers.at(i) - avg, 2));
     float variance = accumulate(a.begin(), a.end(), 0) / float(numbers.size() - 1);
     return sqrt(variance);
@@ -95,7 +95,7 @@ vector<tuple<float, float>> summarize(vector<vector<float>> dataset)
 {
     zip(dataset);
     vector<tuple<float, float>> summaries;
-    for (unsigned i = 0; i < dataset.size(); i++)
+    for (int i = 0; i < dataset.size(); i++)
     {
         auto tup = make_tuple(mean(dataset.at(i)), standard_deviation(dataset.at(i)));
         summaries.push_back(tup);
@@ -142,13 +142,15 @@ map<float, float> calculate_class_prob(map<float, vector<tuple<float, float>>> s
     for (map<float, vector<tuple<float, float>>>::iterator it = summaries.begin(); it != summaries.end(); ++it)
     {
         probabilities[it->first] = 1;
+        // #pragma omp parallel for ordered
         for (int i = 0; i < (it->second).size(); ++i)
         {
+            // #pragma omp ordered
+            {
             float mean = get<0>((it->second).at(i));
             float stdev = get<1>((it->second).at(i));
             float x = input_vector[i];
-            float a = calculate_prob(x, mean, stdev);
-            probabilities.at(it->first) *= a;
+            probabilities.at(it->first) *= calculate_prob(x, mean, stdev);}
         }
     }
     return probabilities;
@@ -172,73 +174,64 @@ float predict(map<float, vector<tuple<float, float>>> summaries, vector<float> i
 vector<float> get_predictions(map<float, vector<tuple<float, float>>> summaries, vector<vector<float>> test_set)
 {
     vector<float> predictions;
-    #pragma omp parallel for num_threads(NUM_THREAD)
+
+    // #pragma omp parallel for ordered
     for (int i = 0; i < test_set.size(); i++)
+        // #pragma omp ordered
         predictions.push_back(predict(summaries, test_set[i]));
+
     return predictions;
 }
 
 // Tinh toan do chinh xac cua phan lop
 float get_accuracy(vector<vector<float>> test_set, vector<float> predictions)
 {
-    float correct = 0;
+    int correct = 0;
     for (int i = 0; i < test_set.size(); ++i)
-        if (test_set.at(i).back() == predictions.at(i))
-            correct += 1;
-    return (correct / float(test_set.size())) * 100.0;
+        if (test_set.at(i).back() != predictions.at(i))
+            correct++;
+    return (1 - correct / float(test_set.size())) * 100.0;
 }
 
 int main()
 {
-    auto start = chrono::system_clock::now();
-    float split_ratio = 0.8;
+    start = clock();
+    float split_ratio = 0.2;
     vector<vector<float>> dataset = load_data("data.csv");
-    auto end = chrono::system_clock::now();
-    chrono::duration<float> elapsed_seconds = end - start;
-    cout << "Time load data: " << elapsed_seconds.count() << "\n";
 
-
-    // chia train(train_set), test(copy)
-    float train_size = int(dataset.size() * split_ratio);
-    vector<vector<float>> train_set;
-    vector<vector<float>> test_set = dataset;
-
-
-    auto start_ = chrono::system_clock::now();
+    // chia train(dataset), test(test_set)
+    float test_size = int(dataset.size() * split_ratio);
+    vector<vector<float>> test_set;
     srand((int)time(0));
-    while (train_set.size() < train_size)
+    while (test_set.size() < test_size)
     {
-        int index = rand() % test_set.size();
-        train_set.push_back(test_set.at(index));
-        test_set.erase(test_set.begin() + index);
+        int index = rand() % dataset.size();
+        test_set.push_back(dataset.at(index));
+        dataset.erase(dataset.begin() + index);
     }
-    
-    end = chrono::system_clock::now();
-    elapsed_seconds = end - start_;
-    cout << "Time chia train test: " << elapsed_seconds.count() << "\n";
-    //
 
+    start_ = clock();
+    map<float, vector<tuple<float, float>>> summaries = summarize_by_class(dataset);
+    handle_time = ((double)(clock() - start_)) / CLOCKS_PER_SEC;
+    cout << "Time summarize_by_class: " << handle_time << "\n";
 
-    start_ = chrono::system_clock::now();
-    map<float, vector<tuple<float, float>>> summaries = summarize_by_class(train_set);
-    end = chrono::system_clock::now();
-    elapsed_seconds = end - start_;
-    cout << "Time summarize_by_class: " << elapsed_seconds.count() << "\n";
-
+    start_ = clock();
     vector<float> predictions = get_predictions(summaries, test_set);
+    handle_time = ((double)(clock() - start_)) / CLOCKS_PER_SEC;
+    cout << "Time get_predictions: " << handle_time << "\n";
+
     float accuracy = get_accuracy(test_set, predictions);
 
-    vector<vector<float>> data = load_data("benhnhan1.csv");
-    vector<float> prediction = get_predictions(summaries, data);
+    // vector<vector<float>> data = load_data("benhnhan1.csv");
+    // start_ = clock();
+    // vector<float> prediction = get_predictions(summaries, data);
+    // handle_time = ((double) (clock() - start_)) / CLOCKS_PER_SEC;
+    // cout << "Time get_predictions: " << handle_time << "\n";
 
-    end = chrono::system_clock::now();
-    elapsed_seconds = end - start;
-    time_t end_time = std::chrono::system_clock::to_time_t(end);
     cout << "Accuracy of my implement: " << accuracy << "%\n";
-    if (prediction.at(0) == 0)
-        cout << "Khong mac benh\n";
-    else
-        cout << "Mac benh\n";
-    cout << "Time handle: " << elapsed_seconds.count() << "\n";
+    // if (prediction.at(0) == 0)
+    //     cout << "Khong mac benh\n";
+    // else
+    //     cout << "Mac benh\n";
     return 0;
 }

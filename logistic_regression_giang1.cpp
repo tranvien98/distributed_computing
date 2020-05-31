@@ -98,7 +98,7 @@ vector<vector<vector<double>>> makeTrainAndTestData(string filename, float train
        temp = convert(split(line, ','));
        //temp = convert(temp);
        if(temp.back() != 1) {
-            temp[temp.size()-1] = 0;
+            temp.at(temp.size()-1) = 0;
             false_lable_data.push_back(temp);
         } else {
             true_lable_data.push_back(temp);
@@ -110,9 +110,9 @@ vector<vector<vector<double>>> makeTrainAndTestData(string filename, float train
     int true_lable = 0; // so diem du lieu co nhan 1
     int false_lable = 0; // so diem du lieu co nhan 0
     for(auto lable: lables) {
-        if (lable == 1) true_lable++;
+        if (lable != 1) false_lable++;
     }
-    false_lable = lables.size() - true_lable;
+    true_lable = lables.size() - false_lable;
 
     // so nhan 1 trong tap test
     int test_true_lable = ceil(true_lable*(1-train));
@@ -259,50 +259,34 @@ vector<double> logistic_regression(vector<vector<double>> train, vector<vector<d
 
 int main()
 {
-    int h = 0;
-    vector<double> result = readByColumn("data.csv", 1);
-    cout<<result.at(0)<<endl;
-    double a = 0.0;
-    double b = 0.0;
-    for(auto i:result) {
-        if(i>a) a = i;
-        if(i<b) b = i;
-    }
-    double x = standardValue(result);
-    cout<<x<<endl;
-    cout<<a-b;
 
-    vector<double> vectorStandard = standardVector("data.csv");
-    for(auto k:vectorStandard)
-        cout<<k<<endl;
-
-       //vector<vector<vector<double>>> data = makeTrainAndTestData("data.csv", 0.6);
+    vector<vector<vector<double>>> data = makeTrainAndTestData("data.csv", 0.8);
     //data[0] là test, data[1] là train
 
      // vector dung chuan hoa
-    //vector<double> standard = standardVector("data.csv");
+    vector<double> standard = standardVector("data.csv");
 
-    //for(auto i:standard)
-      //  cout<<i<<endl;
+   // for(auto i:standard)
+      //cout<<i<<endl;
 
     // tạp test sau khi chuan hoa
-   // vector<vector<double>> test;
-   // vector<double> x , w;
-   // for(auto item : data[0]) {
-     //   x = standardize(standard,item);
-     //   x.insert(x.begin(),1);
-     //   test.push_back(x);
-    //}
-   // vector<vector<double>> train;
-    //for(auto item : data[1]) {
-       // x = standardize(standard,item);
-       // x.insert(x.begin(),1);
-        //train.push_back(x);
-    //}
+    vector<vector<double>> test;
+    vector<double> x , w;
+    for(auto item : data[0]) {
+       x = standardize(standard,item);
+       x.insert(x.begin(),1);
+      test.push_back(x);
+    }
+    vector<vector<double>> train;
+    for(auto item : data[1]) {
+       x = standardize(standard,item);
+       x.insert(x.begin(),1);
+    train.push_back(x);
+    }
 
-    //int numOfIteration = 500; // so lan lap thuat toan
-    //double learning_rate = 0.003;
-    //w = logistic_regression(train, test, numOfIteration, learning_rate);
-    //for (auto a : w) cout << a << ',';
-    //return 0;
+    int numOfIteration = 500; // so lan lap thuat toan
+    double learning_rate = 0.003;
+    w = logistic_regression(train, test, numOfIteration, learning_rate);
+    for (auto a : w) cout << a << ',';
+    return 0;
 }
